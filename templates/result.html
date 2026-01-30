@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results - ATS Resume Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Resume Analysis Results</h1>
+            <a href="/" class="back-link">← Upload Another Resume</a>
+        </header>
+
+        <main id="resultsContainer">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading results...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Retrieve data from sessionStorage
+        let analysisData = {};
+        try {
+            const storedData = sessionStorage.getItem('analysisData');
+            if (storedData) {
+                analysisData = JSON.parse(storedData);
+            }
+        } catch (e) {
+            console.error('Error parsing stored data:', e);
+        }
+        
+        // Remove loading indicator
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.style.display = 'none';
+        }
+
+        if (!analysisData || !analysisData.analysis) {
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="error-card">
+                    <h2>No Results Found</h2>
+                    <p>Please upload a resume to analyze.</p>
+                    <a href="/" class="btn-primary">Go Back</a>
+                </div>
+            `;
+        } else {
+            console.log('Rendering results with data:', analysisData);
+            renderResults(analysisData);
+        }
+
+        function renderResults(data) {
+            const analysis = data.analysis;
+            const metadata = data.metadata || {};
+            
+            const atsStatus = analysis.ats_friendly;
+            const statusClass = atsStatus === 'Yes' ? 'status-yes' : 
+                               atsStatus === 'Intermediate' ? 'status-intermediate' : 'status-no';
+            
+            const scoreColor = analysis.overall_score >= 80 ? 'score-high' :
+                              analysis.overall_score >= 60 ? 'score-medium' : 'score-low';
+
+            // Format metadata
+            const pageCount = metadata.page_count || 0;
+            const fonts = metadata.fonts || [];
+            const links = metadata.links || [];
+            const violations = metadata.violations || [];
+
+            const html = `
+                <!-- Summary Section -->
+                <div class="summary-section">
+                    <div class="score-card">
+                        <div class="score-circle ${scoreColor}">
+                            <span class="score-number">${analysis.overall_score}</span>
+                            <span class="score-label">Overall Score</span>
+                        </div>
+                        <div class="ats-indicator ${statusClass}">
+                            <span class="ats-label">ATS Friendly:</span>
+                            <span class="ats-value">${atsStatus}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- File Metadata -->
+                    <div class="metadata-card">
+                        <h3>📄 File Information</h3>
+                        <div class="metadata-grid">
+                            <div class="metadata-item">
+                                <span class="metadata-label">Pages:</span>
+                                <span class="metadata-value">${pageCount}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Fonts Detected:</span>
+                                <span class="metadata-value">${fonts.length > 0 ? fonts.slice(0, 3).join(', ') + (fonts.length > 3 ? '...' : '') : 'None'}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Links Found:</span>
+                                <span class="metadata-value">${links.length}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Issues Detected:</span>
+                                <span class="metadata-value ${violations.length > 0 ? 'has-issues' : 'no-issues'}">${violations.length}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-grid">
+
+                    <!-- Strengths -->
+                    <div class="analysis-card">
+                        <h2>💪 Strengths</h2>
+                        <div class="content-box markdown-content">${marked.parse(analysis.strengths)}</div>
+                    </div>
+
+                    <!-- X-Factor -->
+                    <div class="analysis-card highlight-card">
+                        <h2>⭐ X-Factor</h2>
+                        <div class="content-box markdown-content">${marked.parse(analysis.x_factor)}</div>
+                    </div>
+
+                    <!-- Weaknesses -->
+                    <div class="analysis-card">
+                        <h2>⚠️ Weaknesses</h2>
+                        <div class="content-box markdown-content">${marked.parse(analysis.weaknesses)}</div>
+                    </div>
+
+                    <!-- Fixes -->
+                    <div class="analysis-card">
+                        <h2>🔧 Recommended Fixes</h2>
+                        <ul class="fixes-list">
+                            ${analysis.fixes.map(fix => `<li>${marked.parse(fix)}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <!-- Suggested Roles -->
+                    <div class="analysis-card copyable-card">
+                        <div class="card-header">
+                            <h2>🎯 Suggested Roles</h2>
+                            <button class="copy-btn" onclick="copyToClipboard('suggestedRoles', event)" title="Copy to clipboard">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="tags-container" id="suggestedRoles">
+                            ${analysis.suggested_roles.map(role => `<span class="tag">${role}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <!-- ATS Keywords -->
+                    <div class="analysis-card copyable-card">
+                        <div class="card-header">
+                            <h2>🔑 ATS Keywords to Add</h2>
+                            <button class="copy-btn" onclick="copyToClipboard('atsKeywords', event)" title="Copy to clipboard">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="tags-container" id="atsKeywords">
+                            ${analysis.ats_keywords_to_add.map(keyword => `<span class="tag keyword-tag">${keyword}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Detected Issues -->
+                    ${violations.length > 0 ? `
+                    <div class="analysis-card warning-card">
+                        <h2>⚠️ Detected Formatting Issues</h2>
+                        <ul class="violations-list">
+                            ${violations.map(v => `<li>${v}</li>`).join('')}
+                        </ul>
+                        <p class="violation-note">These issues have been factored into your overall score and ATS-friendly rating.</p>
+                    </div>
+                    ` : `
+                    <div class="analysis-card success-card">
+                        <h2>✅ Formatting Check</h2>
+                        <p class="success-message">No formatting violations detected! Your resume follows ATS-friendly formatting standards.</p>
+                    </div>
+                    `}
+
+                    <!-- Detailed Metadata (if available) -->
+                    ${fonts.length > 0 || links.length > 0 ? `
+                    <div class="analysis-card info-card">
+                        <h2>📋 Technical Details</h2>
+                        ${fonts.length > 0 ? `
+                        <div class="detail-section">
+                            <h3>Fonts Used:</h3>
+                            <div class="tags-container">
+                                ${fonts.map(font => `<span class="tag info-tag">${font}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${links.length > 0 ? `
+                        <div class="detail-section">
+                            <h3>Links Found:</h3>
+                            <ul class="links-list">
+                                ${links.slice(0, 10).map(link => `<li><a href="${link}" target="_blank" rel="noopener noreferrer">${link.length > 50 ? link.substring(0, 50) + '...' : link}</a></li>`).join('')}
+                                ${links.length > 10 ? `<li class="more-links">... and ${links.length - 10} more</li>` : ''}
+                            </ul>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            const container = document.getElementById('resultsContainer');
+            if (container) {
+                container.innerHTML = html;
+                // Scroll to top smoothly
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function copyToClipboard(elementId, event) {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                console.error('Element not found:', elementId);
+                return;
+            }
+            
+            const text = Array.from(element.querySelectorAll('.tag'))
+                .map(tag => tag.textContent.trim())
+                .join(', ');
+            
+            if (!text) {
+                console.warn('No text to copy');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Show feedback
+                if (event && event.target) {
+                    const btn = event.target.closest('.copy-btn');
+                    if (btn) {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                        btn.style.color = '#10b981';
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.style.color = '';
+                        }, 2000);
+                    }
+                }
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>
+

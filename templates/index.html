@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ATS Resume Analyzer</h1>
+            <p class="subtitle">AI-Powered Resume Analysis for ATS Optimization</p>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-card">
+                    <div class="upload-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h2>Upload Your Resume</h2>
+                    <p class="upload-hint">Supported formats: PDF, DOCX (Max 16MB)</p>
+                    
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="drop-zone" id="dropZone">
+                            <div class="drop-zone-content">
+                                <div class="drop-zone-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                </div>
+                                <p class="drop-zone-text">
+                                    <span class="drop-zone-main-text">Drag & drop your resume here</span>
+                                    <span class="drop-zone-sub-text">or click to browse</span>
+                                </p>
+                                <p class="drop-zone-file-name" id="dropZoneFileName" style="display: none;">
+                                    <span id="fileNameText"></span>
+                                </p>
+                            </div>
+                            <input type="file" id="fileInput" name="file" accept=".pdf,.docx" required>
+                        </div>
+                        <button type="submit" class="submit-btn" id="submitBtn">
+                            <span class="btn-text">Analyze Resume</span>
+                            <span class="btn-loader" style="display: none;">
+                                <span class="spinner"></span> Analyzing...
+                            </span>
+                        </button>
+                    </form>
+
+                    <div id="errorMessage" class="error-message" style="display: none;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const dropZone = document.getElementById('dropZone');
+        const dropZoneFileName = document.getElementById('dropZoneFileName');
+        const dropZoneText = document.querySelector('.drop-zone-text');
+
+        // Drag and drop handlers
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Only remove drag-over if we're actually leaving the drop zone
+            if (!dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove('drag-over');
+            }
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // Handle click on drop zone - trigger file input
+        dropZone.addEventListener('click', function(e) {
+            // Prevent event from bubbling and triggering multiple times
+            e.stopPropagation();
+            // Only trigger if not already a file selected (to allow re-selection)
+            if (e.target !== fileInput && e.target !== dropZoneFileName) {
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Validate file type
+            const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            const validExtensions = ['.pdf', '.docx'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+            if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+                showError('Invalid file type. Please upload a PDF or DOCX file.');
+                return;
+            }
+
+            // Validate file size (16MB)
+            if (file.size > 16 * 1024 * 1024) {
+                showError('File size exceeds 16MB limit.');
+                return;
+            }
+
+            // Create a new FileList and assign to input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            // Update UI
+            document.getElementById('fileNameText').textContent = file.name;
+            dropZoneFileName.style.display = 'block';
+            dropZoneText.style.display = 'none';
+            dropZone.classList.add('file-selected');
+
+            // Clear any previous errors
+            errorMessage.style.display = 'none';
+        }
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                showError('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.querySelector('.btn-text').style.display = 'none';
+            submitBtn.querySelector('.btn-loader').style.display = 'inline-block';
+            errorMessage.style.display = 'none';
+            
+            // Update button text to show processing stages
+            const loaderText = submitBtn.querySelector('.btn-loader');
+            let stage = 0;
+            const stages = [
+                'Uploading file...',
+                'Extracting text...',
+                'Analyzing with AI model...',
+                'Processing results...'
+            ];
+            let stageInterval = setInterval(() => {
+                if (stage < stages.length) {
+                    loaderText.innerHTML = `<span class="spinner"></span> ${stages[stage]}`;
+                    stage++;
+                }
+            }, 2000); // Change stage every 2 seconds
+
+            try {
+                // First check if server is responding
+                const healthCheck = await fetch('/health').catch(() => null);
+                if (!healthCheck || !healthCheck.ok) {
+                    throw new Error('Cannot connect to server. Please ensure the server is running.');
+                }
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                let data;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    // If not JSON, read as text to see what we got
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text.substring(0, 200));
+                    throw new Error('Server returned an invalid response. Please check if the server is running correctly.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.error || `Upload failed (${response.status})`);
+                }
+
+                // Store results in sessionStorage and redirect
+                sessionStorage.setItem('analysisData', JSON.stringify(data));
+                window.location.href = '/result';
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                if (error instanceof SyntaxError) {
+                    showError('Server returned invalid data. Please check if the server is running and try again.');
+                } else {
+                    showError(error.message || 'An error occurred. Please try again.');
+                }
+            } finally {
+                clearInterval(stageInterval);
+                submitBtn.disabled = false;
+                submitBtn.querySelector('.btn-text').style.display = 'inline';
+                submitBtn.querySelector('.btn-loader').style.display = 'none';
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+
