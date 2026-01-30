@@ -165,8 +165,3 @@ Violations are injected into the model context to influence scoring and recommen
 - Ensure files are PDF or DOCX format
 - Maximum file size is 16MB
 - Check that `uploads/` directory is writable
-
-## License
-
-[Add your license here]
-
