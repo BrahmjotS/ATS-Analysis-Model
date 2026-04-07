@@ -100,7 +100,7 @@ Upload and analyze a resume file
 - Content-Type: multipart/form-data
 - Body: `file` (PDF or DOCX)
 
-**Response:**
+**Response (JSON Format):**
 ```json
 {
   "analysis": {
