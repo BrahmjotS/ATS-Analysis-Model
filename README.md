@@ -1,4 +1,4 @@
-# ATS Resume Analyzer
+# ATS Based Resume Analyzer
 
 A Flask web application that uses a fine-tuned Gemma model to analyze resumes for ATS (Applicant Tracking System) optimization.
 
