@@ -4,12 +4,12 @@ A Flask web application that uses a fine-tuned Gemma model to analyze resumes fo
 
 ## Features
 
-- **AI-Powered Analysis**: Uses fine-tuned Gemma-2-2B model for resume analysis
-- **File Support**: Accepts PDF and DOCX resume files
-- **Soft-Gated Validation**: Detects formatting violations (fonts, page count, links) without blocking analysis
-- **Structured Output**: Returns comprehensive analysis with scores, strengths, weaknesses, and recommendations
-- **Modern UI**: Responsive web interface with real-time analysis results
-- **Copy-to-Clipboard**: Easy copying of suggested roles and ATS keywords
+- **AI-Powered Analysis**: Uses fine-tuned Gemma-2-2B model for resume analysis.
+- **File Support**: Accepts PDF and DOCX resume files.
+- **Soft-Gated Validation**: Detects formatting violations (fonts, page count, links) without blocking analysis.
+- **Structured Output**: Returns comprehensive analysis with scores, strengths, weaknesses, and recommendations.
+- **Modern UI**: Responsive web interface with real-time analysis results.
+- **Copy-to-Clipboard**: Easy copying of suggested roles and ATS keywords.
 
 ## Setup
 
@@ -90,10 +90,10 @@ project/
 ## API Endpoints
 
 ### `GET /`
-Main upload page
+Main upload page.
 
 ### `POST /upload`
-Upload and analyze a resume file
+Upload and analyze a resume file.
 
 **Request:**
 - Method: POST
@@ -125,18 +125,18 @@ Upload and analyze a resume file
 ## Model Configuration
 
 The application automatically:
-- Detects GPU availability and uses CUDA if available
-- Loads the fine-tuned Gemma model from `gemma_tuned/`
-- Applies PEFT adapter weights if present
-- Falls back to CPU if GPU is not available
+- Detects GPU availability and uses CUDA if available.
+- Loads the fine-tuned Gemma model from `gemma_tuned/`.
+- Applies PEFT adapter weights if present.
+- Falls back to CPU if GPU is not available.
 
 ## Validation Rules
 
 The system performs soft-gated validation (does not block analysis):
 
-1. **Page Count**: Entry-level resumes should be 1 page
-2. **Fonts**: Only Sans-Serif or Calibri fonts are acceptable
-3. **Links**: Must use `mailto:` for emails and `https://` for web links
+1. **Page Count**: Entry-level resumes should be 1 page.
+2. **Fonts**: Only Sans-Serif or Calibri fonts are acceptable.
+3. **Links**: Must use `mailto:` for emails and `https://` for web links.
 
 Violations are injected into the model context to influence scoring and recommendations.
 
@@ -153,15 +153,15 @@ Violations are injected into the model context to influence scoring and recommen
 ## Troubleshooting
 
 ### Model Loading Issues
-- Ensure the `gemma_tuned/` directory contains the adapter files
-- Check that you have sufficient RAM/VRAM for the model
-- Verify the base model `google/gemma-2-2b-it` is accessible
+- Ensure the `gemma_tuned/` directory contains the adapter files.
+- Check that you have sufficient RAM/VRAM for the model.
+- Verify the base model `google/gemma-2-2b-it` is accessible.
 
 ### CUDA Issues
-- Install CUDA-enabled PyTorch if you have a compatible GPU
-- The application will automatically fall back to CPU if CUDA is unavailable
+- Install CUDA-enabled PyTorch if you have a compatible Nvidia GPU.
+- The application will automatically fall back to CPU if CUDA is unavailable.
 
 ### File Upload Issues
-- Ensure files are PDF or DOCX format
-- Maximum file size is 16MB
-- Check that `uploads/` directory is writable
+- Ensure files are PDF or DOCX format.
+- Maximum file size is 16MB.
+- Check that `uploads/` directory is writable.
